@@ -23,14 +23,17 @@ class CurrencyService:
         return self._parse_xml_response(response.content, date_str)
     
     def get_rates_for_period(self, days: int = 90) -> List[Currency]:
-        all_currencies = []
-        date_strings = self._get_date_strings(days)
+        all_currencies: List[Currency] = []
+        date_strings: List[str] = self._get_date_strings(days)
         
         print(f"Получение курсов валют за последние {days} дней...")
         
         with concurrent.futures.ThreadPoolExecutor(max_workers=self.parallel_requests) as executor:
-            future_to_date = {executor.submit(self.get_exchange_rates, date_str): date_str 
-                             for date_str in date_strings}
+            future_to_date = {}
+            
+            for date_str in date_strings:
+                future = executor.submit(self.get_exchange_rates, date_str)
+                future_to_date[future] = date_str
             
             for future in concurrent.futures.as_completed(future_to_date):
                 date_str = future_to_date[future]
